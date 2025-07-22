@@ -1,0 +1,54 @@
+/* =================================
+   === TEMA PRETO & DOURADO BÁSICO ===
+   =================================
+*/
+
+/* Estilo geral para a janela e a maioria dos widgets */
+QWidget {
+    background-color: #1c1c1c; /* Um preto não tão absoluto, mais suave para os olhos */
+    color: #DAA520;            /* Cor dourada para o texto (GoldenRod) */
+    font-family: Arial;
+    font-size: 14px;
+}
+
+/* Estilo para Labels (Rótulos) */
+QLabel {
+    color: #DAA520; /* Garante que a cor do texto seja dourada */
+    background-color: transparent; /* Fundo transparente para não sobrepor o da janela */
+}
+
+/* Estilo para Botões */
+QPushButton {
+    background-color: #2b2b2b; /* Fundo do botão um pouco mais claro que o geral */
+    color: #DAA520;
+    border: 1px solid #DAA520; /* Borda dourada */
+    border-radius: 5px;
+    padding: 8px 16px;
+}
+
+/* Efeito quando o mouse passa por cima do botão */
+QPushButton:hover {
+    background-color: #DAA520; /* Inverte as cores no hover */
+    color: #1c1c1c;
+}
+
+/* Efeito quando o botão é pressionado */
+QPushButton:pressed {
+    background-color: #b8860b; /* Um dourado mais escuro (DarkGoldenRod) */
+    color: #1c1c1c;
+    border: 1px solid #b8860b;
+}
+
+/* Estilo para campos de entrada de texto */
+QLineEdit, QTextEdit {
+    background-color: #2b2b2b;
+    color: #DAA520;
+    border: 1px solid #DAA520;
+    border-radius: 4px;
+    padding: 5px;
+}
+
+/* Estilo para o texto de placeholder (dica) nos campos de entrada */
+QLineEdit::placeholder {
+    color: #8c6d1a; /* Um dourado mais escuro e sutil */
+}
