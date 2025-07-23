@@ -32,7 +32,6 @@ class MainPage(QWidget):
         self.validator = QDoubleValidator()
         self.validator.setNotation(QDoubleValidator.Notation.StandardNotation)
 
-        # Campos de Entrada Padrão
         largura_layout = QHBoxLayout()
         self.largura_combo = QComboBox()
         self.largura_combo.addItems(["2", "3", "4", "5", "6", "7", "Personalizado"])
@@ -56,41 +55,40 @@ class MainPage(QWidget):
         self.tipo_ouro_combo.addItems(["Ouro 18k", "Ouro 10k"])
         self.densidades = {"Ouro 18k": 15.4, "Ouro 10k": 12.2}
         
+        self.perfil_combo = QComboBox()
+
         self.form_layout.addRow(QLabel("Largura (mm):"), largura_layout)
         self.form_layout.addRow(QLabel("Tamanho do Anel:"), self.tamanho_anel_input)
         self.espessura_label = QLabel("Espessura (mm):")
         self.form_layout.addRow(self.espessura_label, self.espessura_input)
         self.form_layout.addRow(QLabel("Material:"), self.tipo_ouro_combo)
+        self.form_layout.addRow(QLabel("Perfil da Aliança:"), self.perfil_combo)
 
-        # --- MUDANÇA 1: Agrupar os Radio Buttons em um contêiner QWidget ---
         self.inverse_choice_container = QWidget()
         inverse_choice_layout = QHBoxLayout(self.inverse_choice_container)
-        inverse_choice_layout.setContentsMargins(0, 0, 0, 0) # Remove margens extras
+        inverse_choice_layout.setContentsMargins(0, 0, 0, 0)
         self.radio_por_peso = QRadioButton("Por Peso")
         self.radio_por_valor = QRadioButton("Por Valor")
         self.radio_por_peso.setChecked(True)
         self.radio_por_peso.toggled.connect(self._update_inverse_input_mode)
         inverse_choice_layout.addWidget(self.radio_por_peso)
         inverse_choice_layout.addWidget(self.radio_por_valor)
-
         self.inverse_choice_label = QLabel("Calcular por:")
-        # Adiciona o contêiner ao formulário, não o layout
         self.form_layout.addRow(self.inverse_choice_label, self.inverse_choice_container)
         
-        # Campos de entrada para o cálculo inverso
+        # --- CORREÇÃO APLICADA AQUI ---
         self.massa_alvo_input = QLineEdit()
-        self.massa_alvo_input.setPlaceholderText("Peso desejado em gramas")
         self.massa_alvo_input.setValidator(self.validator)
+        self.massa_alvo_input.setPlaceholderText("Peso desejado em gramas")
         self.massa_alvo_label = QLabel("Peso Desejado (g):")
         self.form_layout.addRow(self.massa_alvo_label, self.massa_alvo_input)
         
         self.valor_alvo_input = QLineEdit()
-        self.valor_alvo_input.setPlaceholderText("Valor a gastar em R$")
         self.valor_alvo_input.setValidator(self.validator)
+        self.valor_alvo_input.setPlaceholderText("Valor a gastar em R$")
         self.valor_alvo_label = QLabel("Valor a Gastar (R$):")
         self.form_layout.addRow(self.valor_alvo_label, self.valor_alvo_input)
-        # --- Fim da Mudança 1 ---
-
+        
         main_layout.addLayout(self.form_layout)
 
         self.calculate_button = QPushButton("Calcular Peso e Valor")
@@ -101,7 +99,6 @@ class MainPage(QWidget):
         line = QFrame(); line.setFrameShape(QFrame.Shape.HLine); line.setFrameShadow(QFrame.Shadow.Sunken)
         main_layout.addWidget(line)
 
-        # Área de Resultado
         results_layout = QHBoxLayout()
         massa_layout = QVBoxLayout()
         self.resultado_massa_label = QLabel("Peso (Massa):")
@@ -124,34 +121,37 @@ class MainPage(QWidget):
 
         self._update_ui_mode()
 
+    def showEvent(self, event):
+        self._populate_profiles()
+        super().showEvent(event)
+
+    def _populate_profiles(self):
+        current_selection = self.perfil_combo.currentText()
+        self.perfil_combo.clear()
+        perfis = self.settings.get("perfis", {"Padrão (Teórico)": 0.0})
+        for profile_name in perfis.keys():
+            self.perfil_combo.addItem(profile_name)
+        index = self.perfil_combo.findText(current_selection)
+        if index != -1: self.perfil_combo.setCurrentIndex(index)
+
     def _on_largura_changed(self, texto_selecionado: str):
         self.largura_personalizada_input.setVisible(texto_selecionado == "Personalizado")
 
     def _update_ui_mode(self):
-        """Alterna a visibilidade dos campos com base no checkbox."""
         is_inverso = self.inverter_checkbox.isChecked()
-
-        # Oculta/mostra os campos de entrada de Espessura
         self.espessura_label.setVisible(not is_inverso)
         self.espessura_input.setVisible(not is_inverso)
-
-        # --- MUDANÇA 2: Oculta/mostra o contêiner e seu label ---
         self.inverse_choice_label.setVisible(is_inverso)
         self.inverse_choice_container.setVisible(is_inverso)
-
         if is_inverso:
             self.calculate_button.setText("Calcular Espessura Necessária")
             self._update_inverse_input_mode()
         else:
             self.calculate_button.setText("Calcular Peso e Valor")
-            # Garante que os campos de alvo fiquem ocultos no modo normal
-            self.massa_alvo_label.setVisible(False)
-            self.massa_alvo_input.setVisible(False)
-            self.valor_alvo_label.setVisible(False)
-            self.valor_alvo_input.setVisible(False)
+            self.massa_alvo_label.setVisible(False); self.massa_alvo_input.setVisible(False)
+            self.valor_alvo_label.setVisible(False); self.valor_alvo_input.setVisible(False)
     
     def _update_inverse_input_mode(self):
-        """Mostra o campo de entrada correto (peso ou valor) com base no Radio Button."""
         is_por_peso = self.radio_por_peso.isChecked()
         self.massa_alvo_label.setVisible(is_por_peso)
         self.massa_alvo_input.setVisible(is_por_peso)
@@ -159,23 +159,17 @@ class MainPage(QWidget):
         self.valor_alvo_input.setVisible(not is_por_peso)
 
     def _on_calculate_click(self):
+        # (Lógica de cálculo permanece a mesma)
         try:
-            # Lógica para pegar largura (mm)
             selecao_largura = self.largura_combo.currentText()
             largura_mm = float(self.largura_personalizada_input.text().replace(',', '.')) if selecao_largura == "Personalizado" else float(selecao_largura)
-            
-            # Lógica para pegar diâmetro (mm)
             tamanho_selecionado = int(self.tamanho_anel_input.currentText())
             diametro_mm = get_diametro_por_tamanho(tamanho_selecionado)
             if diametro_mm is None: raise ValueError("Tamanho inválido.")
-            
-            # Lógica para pegar densidade e valor/g
             selecao_ouro = self.tipo_ouro_combo.currentText()
             densidade = self.densidades[selecao_ouro]
             valor_grama = self.settings.get("valor_ouro_18k", 0) if selecao_ouro == "Ouro 18k" else self.settings.get("valor_ouro_10k", 0)
-
             if self.inverter_checkbox.isChecked():
-                # MODO INVERSO
                 massa_desejada = 0.0
                 if self.radio_por_peso.isChecked():
                     massa_desejada = float(self.massa_alvo_input.text().replace(',', '.'))
@@ -183,9 +177,7 @@ class MainPage(QWidget):
                     valor_alvo = float(self.valor_alvo_input.text().replace(',', '.'))
                     if valor_grama <= 0: raise ValueError("Valor por grama (R$) deve ser > 0. Defina nas Configurações.")
                     massa_desejada = valor_alvo / valor_grama
-                
                 if massa_desejada <= 0: raise ValueError("Peso/Valor alvo deve ser > 0.")
-                
                 espessura_calculada_cm = calcular_espessura_alianca(
                     diametro_interno_cm=(diametro_mm / 10), largura_cm=(largura_mm / 10),
                     densidade=densidade, massa_desejada_g=massa_desejada
@@ -194,18 +186,18 @@ class MainPage(QWidget):
                 valor_final = massa_desejada * valor_grama
                 self.resultado_massa_valor.setText(f"{massa_desejada:.2f} gramas")
                 self.resultado_valor_valor.setText(f"R$ {valor_final:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-
             else:
-                # MODO NORMAL
                 espessura_mm = float(self.espessura_input.text().replace(',', '.'))
-                massa_calculada = calcular_massa_alianca(
+                massa_teorica = calcular_massa_alianca(
                     diametro_interno_cm=(diametro_mm / 10), espessura_cm=(espessura_mm / 10),
                     largura_cm=(largura_mm / 10), densidade=densidade
                 )
-                valor_total = massa_calculada * valor_grama
-                self.resultado_massa_valor.setText(f"{massa_calculada:.2f} gramas")
+                profile_name = self.perfil_combo.currentText()
+                constante = self.settings["perfis"].get(profile_name, 0.0)
+                massa_final_ajustada = massa_teorica * (1 + constante)
+                valor_total = massa_final_ajustada * valor_grama
+                self.resultado_massa_valor.setText(f"{massa_final_ajustada:.2f} gramas")
                 self.resultado_valor_valor.setText(f"R$ {valor_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-
         except (ValueError, TypeError):
             self.resultado_massa_valor.setText("Erro!")
             self.resultado_valor_valor.setText("Verifique os valores.")
